@@ -132,3 +132,10 @@ class ContactMap:
             return self.total/self.num_snapshots
         else:
             return self.total
+
+    def observed_over_expected(self):
+        """
+        Average map divided by the no-loop baseline. Divides out the distance baseline
+        so only the effect of loops is left.
+        """
+        return self.average()/self._no_loop
