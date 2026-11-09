@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 import random
+import numpy as np
+import math
 
 @dataclass
 class OrderedPair:
@@ -61,7 +63,6 @@ class Cohesin:
         seq.cohesin_positions.discard(self.position.left)
         seq.cohesin_positions.discard(self.position.right)
 
-
 @dataclass 
 class Sequence:
     length: int = 1000
@@ -76,3 +77,65 @@ class Sequence:
         while spot in self.cohesin_positions:
             spot = random.randint(0, self.length-1)
         return spot
+
+@dataclass
+class ContactMap:
+    """
+    Approximate contact map in 2D; Actual HI-C map requires 3D
+    """
+    sequence: Sequence
+    bin_width: int
+    base_prob: float = 0.1 # Probabilty of contact with no loop formation
+    decay: float = 1.0 # Decay exponent due to distance between positions
+    loop_multiplier: float = 2.0 # Multiplier for base probability when in the loop
+    num_bins: int = field(init=False)
+    total: np.ndarray = field(init=False) # Store total probabilites for all snapshots for average
+    num_snapshots: int = field(init=False, default=0) # Count snapshots for average
+
+    ### Claude helped with __post_init__
+    ###     -> process of initializing values after intialization
+    ###     -> choosing power law decay
+    def __post_init__(self):
+        # Initialize num of bins (ceil to round up for non-integers)
+        self.num_bins = math.ceil(self.sequence.length/self.bin_width)
+        # Initialize num_bins by num_bins matrix
+        self.total = np.zeros((self.num_bins, self.num_bins))
+
+        # Creating initial matrix (no loop)
+        self._no_loop = np.zeros((self.num_bins, self.num_bins))
+        for i in range(self.num_bins):
+            for j in range(self.num_bins):
+                dist = abs(i-j)
+                # Power law decay
+                self._no_loop[i][j] = self.base_prob / ((1 + dist) ** self.decay)
+
+    def add_snapshot(self, loops):
+        """
+        Add contact probabilities of loops in current snapshot to total
+        """
+        current_snapshot_mtx = self._no_loop.copy()
+        for left, right in loops:
+            if right <= left:
+                continue # newly bound cohesin, no loop yet
+            # Find the left most and right most bin for current loop
+            left_bin = left // self.bin_width
+            right_bin = right //self.bin_width
+
+            # Multiply all probabilities within the loop by multiplier
+            current_snapshot_mtx[left_bin:right_bin + 1, left_bin:right_bin + 1] *= self.loop_multiplier    #fixed calculation error
+
+        self.total += current_snapshot_mtx
+        self.num_snapshots += 1
+
+    def average(self):
+        if self.num_snapshots >= 1:
+            return self.total/self.num_snapshots
+        else:
+            return self.total
+
+    def observed_over_expected(self):
+        """
+        Average map divided by the no-loop baseline. Divides out the distance baseline
+        so only the effect of loops is left.
+        """
+        return self.average()/self._no_loop
