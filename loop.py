@@ -1,6 +1,6 @@
 from dataclass import Sequence, OrderedPair, Cohesin, ContactMap
 import random
-from parsers import g_parser, ctcf_to_position
+from parsers import genome_parser, ctcf_to_position
 import numpy as np
 import math
 import matplotlib.pyplot as plt
@@ -129,7 +129,7 @@ def average_contact(snapshots, seq, bin_width=20, alpha = 1.0, n = 20):
 
 def main():
     bounds = (65_000_000, 70_000_000)
-    genome = g_parser("ctcf_whole_genome.bed")
+    genome = genome_parser("ctcf_whole_genome.bed")
     positions = ctcf_to_position(genome, "chr14", 600, bounds)
     seq = Sequence(length=(bounds[1] - bounds[0]) // 600, ctcf_positions=positions)
     cohesins = [Cohesin(position=OrderedPair(-1, -1)) for _ in range(40)]
