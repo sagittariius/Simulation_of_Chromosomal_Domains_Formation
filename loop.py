@@ -1,5 +1,11 @@
 from dataclass import Sequence, OrderedPair, Cohesin, ContactMap
 import random
+from parsers import genome_parser, ctcf_to_position
+import numpy as np
+import math
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
+from visualization import plot_arcs
 
 
 def loop(cohesins, seq, time):
@@ -51,21 +57,35 @@ def build_contact_map(seq, snapshots, bin_width=10):
     for loops in snapshots:
         contact.add_snapshot(loops)
 
-    return contact.average()
+    return contact
 
 def main():
-    ctcf_sites = {2000, 2500, 6000}
-    seq = Sequence(length = 10000, ctcf_positions=ctcf_sites)
-    cohesins = [Cohesin(position = OrderedPair(-1, -1))]
+    bounds = (65_000_000, 70_000_000)
+    genome = genome_parser("ctcf_whole_genome.bed")
+    positions = ctcf_to_position(genome, "chr14", 600, bounds)
+    seq = Sequence(length=(bounds[1] - bounds[0]) // 600, ctcf_positions=positions)
+    cohesins = [Cohesin(position=OrderedPair(-1, -1)) for _ in range(40)]
     time = 10000
     snapshots, loop_sizes = loop(cohesins, seq, time)
-    contact_map = build_contact_map(seq, snapshots)
 
-    print(loop_sizes)
-    print(sum(loop_sizes)/len(loop_sizes)) 
-    print()
-    print("Contact Matrix:")
-    print(contact_map)
+    # Plotting the loops from the final snapshot
+    final = []
+    last_snapshot = snapshots[-1]
+    for left, right in last_snapshot:
+        if right > left:
+            final.append((left, right))
+    plot_arcs(final)
+
+    # Making contact map
+    bin_width = 30
+    contact_map = build_contact_map(seq, snapshots, bin_width)
+    contact = contact_map.observed_over_expected()
+
+    # Plotting contact map
+    plt.imshow(contact, cmap="YlOrRd")
+    plt.colorbar(label="Observed / expected contact")
+    plt.title("CTCF block probability = 0.99")
+    plt.show()
 
 if __name__ == "__main__":
     main()
