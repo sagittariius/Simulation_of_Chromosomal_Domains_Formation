@@ -5,7 +5,6 @@ import math
 
 @dataclass
 class OrderedPair:
-    # I'm not sure we need it, but for now it is like this
     left: int
     right: int
 
@@ -19,7 +18,7 @@ class Cohesin:
         # Calculates the loop size
         return self.position.right - self.position.left
 
-    def step(self, seq, prob_block=1.0):
+    def step(self, seq, prob_block=0.99):
         # Remove the old loop end positions from the sequence
         seq.cohesin_positions.discard(self.position.left)
         seq.cohesin_positions.discard(self.position.right)
@@ -121,8 +120,11 @@ class ContactMap:
             left_bin = left // self.bin_width
             right_bin = right //self.bin_width
 
-            # Multiply all probabilities within the loop by multiplier
-            current_snapshot_mtx[left_bin:right_bin + 1, left_bin:right_bin + 1] *= self.loop_multiplier    #fixed calculation error
+            # Multiply baseline by loop multiplier and add to the current_snapshot_mtx
+            current_snapshot_mtx[left_bin:right_bin + 1, left_bin:right_bin + 1] += (
+                self._no_loop[left_bin:right_bin + 1, left_bin:right_bin + 1] * (self.loop_multiplier - 1)
+            )
+
 
         self.total += current_snapshot_mtx
         self.num_snapshots += 1
