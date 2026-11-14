@@ -72,6 +72,11 @@ def main(prob_block=PROB_BLOCK):
     time = 10000
     snapshots, loop_sizes = loop(cohesins, seq, time, prob_block)
 
+    # Mean loop size calculations
+    loop_sizes_kb = [s * BP_PER_BIN / 1000 for s in loop_sizes] # Converts the position to position loop sizes to kb
+    mean_kb = np.mean(loop_sizes_kb)
+    print(f"prob_block = {prob_block}: mean {mean_kb:.2f} kb")
+
     # Plotting the loops from the final snapshot
     final = []
     last_snapshot = snapshots[-1]
