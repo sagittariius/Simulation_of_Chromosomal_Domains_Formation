@@ -1,6 +1,12 @@
 from dataclass import Sequence, OrderedPair, Cohesin, ContactMap
 import random
-import visualization as viz
+from parsers import genome_parser, ctcf_to_position
+import numpy as np
+import math
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
+from visualization import plot_arcs, plot_contact_matrix
+import hic_compare as hc
 
 
 def loop(cohesins, seq, time):
@@ -28,7 +34,6 @@ def loop(cohesins, seq, time):
                     loop_sizes.append(c.loop_size())
         if s % 10 == 0:
             snapshot_list.append(snapshot(cohesins))
-          
     return snapshot_list, loop_sizes
     
 
@@ -44,47 +49,36 @@ def snapshot(cohesins):
     """
     snapshots: list[tuple] = list()
     for c in cohesins:
-        if c.bound:
-            snapshots.append((c.position.left, c.position.right))
+        snapshots.append((c.position.left, c.position.right))
     return snapshots
 
 def build_contact_map(seq, snapshots, bin_width=10):
-    """
-    Builds a ContactMap from saved snapshots. 
-
-    Args:
-        seq: Sequence object
-        snapshots: list returned by loop()
-        bin_width: number of sequence positions per bin
-    Returns:
-        The filled ContactMap.
-    """
-    contact = ContactMap(sequence=seq, bin_width=bin_width)
+    contact = ContactMap(sequence = seq, bin_width = bin_width)
 
     for loops in snapshots:
         contact.add_snapshot(loops)
 
     return contact
 
-
 def main():
-    #ctcf_sites = {600, 1300, 2200}
-    ctcf_sites = {2000, 2500, 6000}
-    seq = Sequence(length = 10000, ctcf_positions=ctcf_sites)
-    num_cohesins = 15 # about one every 200 positions, like in the paper
-    cohesins = [Cohesin(position = OrderedPair(-1, -1)) for _ in range(num_cohesins)]
-    #cohesins = [Cohesin(position = OrderedPair(-1, -1))]
-    time = 20000
+    bounds = (65_000_000, 70_000_000)
+    chrom = "chr14"
+    position_size = 500   # bp per position; 500 * bin_width (20) = 10 kb = a Hi-C bin
+    bin_width = 20        # positions per bin
+    res = position_size * bin_width
+    genome = genome_parser("ctcf_whole_genome.bed")
+    positions = ctcf_to_position(genome, chrom, position_size, bounds)
+    seq = Sequence(length=(bounds[1] - bounds[0]) // position_size, ctcf_positions=positions)
+    cohesins = [Cohesin(position=OrderedPair(-1, -1)) for _ in range(40)]
+    time = 10000
     snapshots, loop_sizes = loop(cohesins, seq, time)
-    contact_map = build_contact_map(seq, snapshots, bin_width=30)
+ 
+    # Simulated loops vs Rao et al. (2014) loops, drawn as arcs
+    n_bins = seq.length // bin_width
+    sim_loops = hc.find_sim_loops(snapshots, bin_width, n_bins)
+    real_loops = hc.load_rao_loops("GSE63525_GM12878_primary+replicate_HiCCUPS_looplist.txt.gz",
+                                   chrom, bounds[0], bounds[1], res)
+    hc.plot_loop_arcs(sim_loops, real_loops, res, bounds[0], "loop_arcs.png")
 
-    print(loop_sizes)
-    print(sum(loop_sizes)/len(loop_sizes)) 
-
-    # Visualizations (saved as PNG files)
-    viz.plot_contact_matrix(contact_map.observed_over_expected(), seq.length, seq.ctcf_positions,
-                        title="Simulated contact map",
-                        cmap="YlOrRd").savefig("contact_map.png", dpi=150)
-    
 if __name__ == "__main__":
     main()
