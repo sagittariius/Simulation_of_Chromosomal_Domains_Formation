@@ -7,8 +7,10 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from visualization import plot_arcs
 
+BP_PER_BIN = 600 # One simulation bin = 600 bp
+PROB_BLOCK = 0.99
 
-def loop(cohesins, seq, time):
+def loop(cohesins, seq, time, prob_block=PROB_BLOCK):
     """
     Simulates cohesin loop creation on a "sequence".
 
@@ -27,7 +29,7 @@ def loop(cohesins, seq, time):
             if not c.bound:
                 c.bind(seq)
             else:
-                c.step(seq)
+                c.step(seq, prob_block)
                 if random.random() <= seq.detachment_chance:
                     c.detach(seq)
                     loop_sizes.append(c.loop_size())
@@ -59,14 +61,16 @@ def build_contact_map(seq, snapshots, bin_width=10):
 
     return contact
 
-def main():
+def main(prob_block=PROB_BLOCK):
+    random.seed(1)
+
     bounds = (65_000_000, 70_000_000)
     genome = genome_parser("ctcf_whole_genome.bed")
-    positions = ctcf_to_position(genome, "chr14", 600, bounds)
-    seq = Sequence(length=(bounds[1] - bounds[0]) // 600, ctcf_positions=positions)
-    cohesins = [Cohesin(position=OrderedPair(-1, -1)) for _ in range(40)]
+    positions = ctcf_to_position(genome, "chr14", BP_PER_BIN, bounds)
+    seq = Sequence(length=(bounds[1] - bounds[0]) // BP_PER_BIN, ctcf_positions=positions)
+    cohesins = [Cohesin(position=OrderedPair(-1, -1)) for _ in range(40)] # 5000 kb / 40 = 125 kb per cohesin
     time = 10000
-    snapshots, loop_sizes = loop(cohesins, seq, time)
+    snapshots, loop_sizes = loop(cohesins, seq, time, prob_block)
 
     # Plotting the loops from the final snapshot
     final = []
@@ -77,15 +81,26 @@ def main():
     plot_arcs(final)
 
     # Making contact map
-    bin_width = 30
+    bin_width = 20
     contact_map = build_contact_map(seq, snapshots, bin_width)
     contact = contact_map.observed_over_expected()
 
-    # Plotting contact map
-    plt.imshow(contact, cmap="YlOrRd")
+    # Plotting contact map with genomic axes (Helped by Claude)
+    map_bin_bp = bin_width * BP_PER_BIN   # 20 * 600 = 12,000 bp per map bin (matches paper's resolution)
+    start_mb = bounds[0] / 1e6
+    end_mb = (bounds[0] + contact.shape[0] * map_bin_bp) / 1e6   # about 70.004 Mb
+
+    plt.imshow(contact, cmap="YlOrRd",
+            extent=[start_mb, end_mb, end_mb, start_mb])
+
+    #plt.xlim(65.0, 68.0)
+    #plt.ylim(68.0, 65.0)
     plt.colorbar(label="Observed / expected contact")
-    plt.title("CTCF block probability = 0.99")
+    plt.xlabel("chr14 position (Mb)")
+    plt.ylabel("chr14 position (Mb)")
+    plt.title(f"CTCF Blocking (p = {prob_block})")
     plt.show()
 
 if __name__ == "__main__":
-    main()
+    for p in (0.0,0.99):
+        main(prob_block=p)
