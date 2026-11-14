@@ -11,6 +11,7 @@ def genome_parser(filename):
             ctcf_data.setdefault(words[0], []).append([int(words[1]), int(words[2])])
     return ctcf_data
 
+# Claude generated
 def ctcf_to_position(ctcf_data, chromosome: str, position_size: int, bounds: tuple) -> set[int]:
     final_positions = set()
     for start, end in ctcf_data[chromosome]:

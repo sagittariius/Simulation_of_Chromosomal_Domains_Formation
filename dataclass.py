@@ -18,7 +18,7 @@ class Cohesin:
         # Calculates the loop size
         return self.position.right - self.position.left
 
-    def step(self, seq, prob_block=0.99):
+    def step(self, seq, prob_block):
         # Remove the old loop end positions from the sequence
         seq.cohesin_positions.discard(self.position.left)
         seq.cohesin_positions.discard(self.position.right)
@@ -65,7 +65,7 @@ class Cohesin:
 @dataclass 
 class Sequence:
     length: int = 1000
-    detachment_chance: float = 0.01
+    detachment_chance: float = 0.007
     ctcf_positions: set[int] = field(default_factory=set)
     cohesin_positions: set[int] = field(default_factory=set)
 
@@ -80,7 +80,7 @@ class Sequence:
 @dataclass
 class ContactMap:
     """
-    Approximate contact map in 2D; Actual HI-C map requires 3D
+    Approximate contact map in 2D
     """
     sequence: Sequence
     bin_width: int
