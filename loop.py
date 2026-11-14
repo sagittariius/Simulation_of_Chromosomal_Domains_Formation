@@ -54,28 +54,48 @@ def snapshot(cohesins):
     return snapshots
 
 def build_contact_map(seq, snapshots, bin_width=10):
+    """
+    Builds a ContactMap object based on the parameters and using the second half of snapshots.
+    """
     contact = ContactMap(sequence = seq, bin_width = bin_width)
 
-    for loops in snapshots:
+    for loops in snapshots[len(snapshots) // 2:]:
         contact.add_snapshot(loops)
 
     return contact
+
+# Claude helped with everything to do with coverage
+def loop_stats(snapshots, loop_sizes, seq_length):
+    """
+    Loop stats to compare to paper
+    """
+    # Convert loop size to kb
+    sizes_kb = np.array(loop_sizes) * BP_PER_BIN / 1000
+    counts, coverage = [], []
+    for snapshot in snapshots[len(snapshots) // 2:]: # Loops over second half
+        covered = np.zeros(seq_length, dtype=bool)
+        n = 0
+        for left, right in snapshot:
+            if right > left: # Checks if cohesin has loop yet
+                covered[left:right + 1] = True
+                n += 1
+        counts.append(n)
+        coverage.append(covered.mean())
+    print(f"mean {sizes_kb.mean():.0f} kb, median {np.median(sizes_kb):.0f} kb, "
+          f"{np.mean(counts):.1f} loops/snapshot, coverage {np.mean(coverage):.0%}")
 
 def main(prob_block=PROB_BLOCK):
     random.seed(1)
 
     bounds = (65_000_000, 70_000_000)
     genome = genome_parser("ctcf_whole_genome.bed")
-    positions = ctcf_to_position(genome, "chr14", BP_PER_BIN, bounds)
+    positions = ctcf_to_position(genome, "chr14", BP_PER_BIN, bounds) # length converted to bins
     seq = Sequence(length=(bounds[1] - bounds[0]) // BP_PER_BIN, ctcf_positions=positions)
     cohesins = [Cohesin(position=OrderedPair(-1, -1)) for _ in range(40)] # 5000 kb / 40 = 125 kb per cohesin
     time = 10000
     snapshots, loop_sizes = loop(cohesins, seq, time, prob_block)
 
-    # Mean loop size calculations
-    loop_sizes_kb = [s * BP_PER_BIN / 1000 for s in loop_sizes] # Converts the position to position loop sizes to kb
-    mean_kb = np.mean(loop_sizes_kb)
-    print(f"prob_block = {prob_block}: mean {mean_kb:.2f} kb")
+    stats = loop_stats(snapshots, loop_sizes, seq.length)
 
     # Plotting the loops from the final snapshot
     final = []
