@@ -18,7 +18,7 @@ class Cohesin:
         # Calculates the loop size
         return self.position.right - self.position.left
 
-    def step(self, seq, prob_block):
+    def step(self, seq, prob_block=1.0):
         # Remove the old loop end positions from the sequence
         seq.cohesin_positions.discard(self.position.left)
         seq.cohesin_positions.discard(self.position.right)
