@@ -1,6 +1,3 @@
-from dataclass import Sequence, OrderedPair, Cohesin, ContactMap
-from visualization import plot_contact_matrix
-
 def genome_parser(filename):
     ctcf_data = {}
     with open(filename) as f:
