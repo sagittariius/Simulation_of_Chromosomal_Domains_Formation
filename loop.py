@@ -53,7 +53,7 @@ def snapshot(cohesins):
         snapshots.append((c.position.left, c.position.right))
     return snapshots
 
-def build_contact_map(seq, snapshots, bin_width=10):
+def build_contact_map(seq, snapshots, bin_width):
     """
     Builds a ContactMap object based on the parameters and using the second half of snapshots.
     """
@@ -92,7 +92,7 @@ def main(prob_block=PROB_BLOCK):
     positions = ctcf_to_position(genome, "chr14", BP_PER_BIN, bounds) # length converted to bins
     seq = Sequence(length=(bounds[1] - bounds[0]) // BP_PER_BIN, ctcf_positions=positions)
     cohesins = [Cohesin(position=OrderedPair(-1, -1)) for _ in range(40)] # 5000 kb / 40 = 125 kb per cohesin
-    time = 10000
+    time = 100000
     snapshots, loop_sizes = loop(cohesins, seq, time, prob_block)
 
     stats = loop_stats(snapshots, loop_sizes, seq.length)
@@ -106,7 +106,7 @@ def main(prob_block=PROB_BLOCK):
     plot_arcs(final)
 
     # Making contact map
-    bin_width = 20
+    bin_width = 20 
     contact_map = build_contact_map(seq, snapshots, bin_width)
     contact = contact_map.observed_over_expected()
 
