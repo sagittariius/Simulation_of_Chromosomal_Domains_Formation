@@ -111,7 +111,8 @@ def plot_loop_arcs(sim_loops, real_loops, res, start, path="loop_arcs.png", tol=
  
     fig, ax = plt.subplots(figsize=(12, 4))
     biggest = 0
-    for loops, matched, theta1, theta2, color in (
+  
+    for loops, matched, theta1, theta2, color in (                  #Claude wrote this nested for-loop
             (sim_loops, sim_matched, 0, 180, "tab:green"),
             (real_loops, real_matched, 180, 360, "tab:purple")):
         # draw black (unmatched) first so colored arcs sit on top
@@ -126,7 +127,7 @@ def plot_loop_arcs(sim_loops, real_loops, res, start, path="loop_arcs.png", tol=
     ax.axhline(0, color="gray", lw=0.8)
     h = max(biggest, 0.01) / 2 * 1.1
     ax.set_ylim(-h, h)
-    all_loops = list(sim_loops) + list(real_loops)
+    all_loops = list(sim_loops) + list(real_loops)                #Claude formatted all_loops
     if all_loops:
         lo = (start + min(i for i, _ in all_loops) * res) / 1e6 - 0.05
         hi = (start + max(j for _, j in all_loops) * res) / 1e6 + 0.05
