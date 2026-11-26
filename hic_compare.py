@@ -27,7 +27,7 @@ def load_hic(chrom, start, end, res, url=RAO_HIC_URL):
 
 
 def observed_over_expected(mat):
-    """Claude: Divide each diagonal by its mean, so distance no longer dominates.
+    """Claude helped update this function from dataclass.py: Divide each diagonal by its mean, so distance no longer dominates.
     Used on both maps so they are on the same scale."""
     mat = np.array(mat, dtype=float)
     oe = np.full_like(mat, np.nan)
@@ -53,7 +53,7 @@ def load_rao_loops(path, chrom, start, end, res):
             x = (int(c[1]) + int(c[2])) // 2   # middle of each anchor
             y = (int(c[4]) + int(c[5])) // 2
             if start <= x < end and start <= y < end:
-                loops.append(tuple(sorted(((x - start) // res, (y - start) // res))))
+                loops.append((sorted(((x - start) // res, (y - start) // res))))
     return loops
 
 
