@@ -134,6 +134,7 @@ def main():
 
     plt.imshow(contact, cmap="YlOrRd", norm=LogNorm())
     plt.colorbar(label="Contact probability")
+    plt.savefig("contact_map_shortest_path.png", dpi=150)
     plt.show()
     
 

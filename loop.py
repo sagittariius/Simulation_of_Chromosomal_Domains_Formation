@@ -103,7 +103,7 @@ def main(prob_block=PROB_BLOCK):
     for left, right in last_snapshot:
         if right > left:
             final.append((left, right))
-    plot_arcs(final)
+    plot_arcs(final, path=f"arcs_p{prob_block}.png")
 
     # Making contact map
     bin_width = 20 
@@ -124,7 +124,9 @@ def main(prob_block=PROB_BLOCK):
     plt.xlabel("chr14 position (Mb)")
     plt.ylabel("chr14 position (Mb)")
     plt.title(f"CTCF Blocking (p = {prob_block})")
-    plt.show()
+    plt.savefig(f"contact_map_p{prob_block}.png", dpi=150)
+    plt.close()
+
 
 if __name__ == "__main__":
     for p in (0.0,0.99):

@@ -18,7 +18,7 @@ def plot_contact_matrix(matrix, seq_length, ctcf_positions = None,
     fig.tight_layout()
     return fig
 
-def plot_arcs(snapshots, start=None, end=None):
+def plot_arcs(snapshots, start=None, end=None, path="arcs.png"):
     """
     Plots each loop as an arc. The window fits the leftmost and rightmost loops, plus a margin.
 
@@ -48,5 +48,7 @@ def plot_arcs(snapshots, start=None, end=None):
 
     arcs.set_xlim(start, end)
     arcs.set_ylim(0, biggest_arc/2 *1.1)
-    plt.show()
+    if path:
+        fig.savefig(path, dpi=150)
+    plt.close(fig)
     return
